@@ -523,42 +523,6 @@ public:
                 return PP_TRUE;
             }
 
-            /* We delay sending Super-L, and only "press" it on mouse clicks and
-             * letter keys (a-z). This way, Home (Search+Left) appears without
-             * modifiers (instead of Super_L+Home) */
-            if (keystr == "OSLeft") {
-                if (down) {
-                    search_state_ = kSearchUpFirst;
-                } else {
-                    if (search_state_ == kSearchUpFirst) {
-                        /* No other key was pressed: press+release */
-                        SendSearchKey(1);
-                        SendSearchKey(0);
-                    } else if (search_state_ == kSearchDown) {
-                        SendSearchKey(0);
-                    }
-                    search_state_ = kSearchInactive;
-                }
-                return PP_TRUE;  /* Ignore key */
-            }
-
-            if (jskeycode >= 65 && jskeycode <= 90) {  /* letter */
-                /* Search is active, send Super_L if needed */
-                if (down && (search_state_ == kSearchUpFirst ||
-                             search_state_ == kSearchUp)) {
-                    SendSearchKey(1);
-                    search_state_ = kSearchDown;
-                }
-            } else {  /* non-letter */
-                /* Release Super_L if needed */
-                if (search_state_ == kSearchDown) {
-                    SendSearchKey(0);
-                    search_state_ = kSearchUp;
-                } else if (search_state_ == kSearchUpFirst) {
-                    /* Switch from UpFirst to Up */
-                    search_state_ = kSearchUp;
-                }
-            }
             if (server_version_ == "VF1")
                 SendKeySym(keysym, down ? 1 : 0);
             else
@@ -848,12 +812,6 @@ private:
      * SocketSend flushes the mouse position before the click is sent. */
     void SendClick(int button, int down) {
         struct mouseclick* mc;
-
-        if (down && (search_state_ == kSearchUpFirst ||
-                     search_state_ == kSearchUp)) {
-            SendSearchKey(1);
-            search_state_ = kSearchDown;
-        }
 
         pp::VarArrayBuffer array_buffer(sizeof(*mc));
         mc = static_cast<struct mouseclick*>(array_buffer.Map());
